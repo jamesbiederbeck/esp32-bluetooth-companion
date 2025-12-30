@@ -148,10 +148,24 @@ class ProtocolHandler(private val connectionManager: BluetoothConnectionManager)
     
     /**
      * Observe incoming messages from the connection manager
+     * 
+     * TODO: This needs to be connected to the actual Bluetooth data stream.
+     * In a complete implementation, this would:
+     * 1. Collect flow from connectionManager.receivedData
+     * 2. Parse JSON strings into ProtocolMessage objects
+     * 3. Call handleIncomingMessage for each parsed message
+     * 
+     * Example implementation:
+     * viewModelScope.launch {
+     *     connectionManager.receivedData.collect { jsonString ->
+     *         decodeMessage(jsonString)?.let { message ->
+     *             handleIncomingMessage(message)
+     *         }
+     *     }
+     * }
      */
     private fun observeIncomingMessages() {
-        // This would be implemented with proper coroutine flow collection
-        // For now, it's a placeholder showing the structure
+        // This is a placeholder - needs implementation
     }
     
     /**

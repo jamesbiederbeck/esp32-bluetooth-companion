@@ -159,11 +159,14 @@ class Companion:
         msg_id = f"telem_{int(time.time())}"
         
         # Gather system information
+        # Note: Uptime calculation requires tracking boot time
+        # This is a simplified implementation
         payload = {
             "timestamp": time.time(),
             "cpu_freq": machine.freq(),
             "mem_free": gc.mem_free(),
-            "uptime": time.time()  # Simplified - would need boot time tracking
+            # For accurate uptime, track boot time and calculate:
+            # "uptime": time.time() - boot_time
         }
         
         # Add temperature if available
@@ -183,7 +186,18 @@ class Companion:
         self.send_message("telemetry", msg_id, payload)
     
     def _handle_repl_cmd(self, msg_id, payload):
-        """Handle REPL command execution"""
+        """
+        Handle REPL command execution
+        
+        Security Note: While this implementation uses a whitelist of safe
+        built-in functions and restricts module access, eval() and exec()
+        can still be exploited through complex expressions or module methods.
+        For production use in untrusted environments, consider:
+        - Using a dedicated sandboxed Python interpreter
+        - Implementing command whitelisting instead of execution
+        - Adding user authentication
+        - Logging all executed commands
+        """
         command = payload.get("command", "")
         
         try:
@@ -268,7 +282,11 @@ class Companion:
         try:
             files = []
             for item in os.listdir(path):
-                item_path = f"{path}/{item}" if path != "/" else f"/{item}"
+                # Properly join paths to avoid double slashes
+                if path == "/":
+                    item_path = f"/{item}"
+                else:
+                    item_path = f"{path}/{item}"
                 try:
                     stat = os.stat(item_path)
                     is_dir = stat[0] & 0x4000  # Directory flag
@@ -394,10 +412,16 @@ def notify(title, message, level="info"):
     """
     Send a notification without creating a Companion instance
     
+    NOTE: This is a convenience function that prints to console.
+    For full functionality, use the Companion class with proper
+    Bluetooth setup.
+    
     Args:
         title: Notification title
         message: Notification message
         level: Notification level (info, warning, error, success)
     """
-    comp = Companion()
-    comp.notify(title, message, level)
+    print(f"[{level.upper()}] {title}: {message}")
+    
+    # TODO: In a real implementation, this would create a singleton
+    # Companion instance or use an existing one to send notifications

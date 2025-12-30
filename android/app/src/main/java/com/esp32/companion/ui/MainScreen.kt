@@ -32,6 +32,8 @@ sealed class Screen(val route: String, val title: String, val icon: androidx.com
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun MainScreen(viewModel: MainViewModel = viewModel()) {
+    // Note: ExperimentalPermissionsApi from Accompanist is used for permissions
+    // Consider migrating to androidx.activity.compose when it becomes stable
     val navController = rememberNavController()
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
