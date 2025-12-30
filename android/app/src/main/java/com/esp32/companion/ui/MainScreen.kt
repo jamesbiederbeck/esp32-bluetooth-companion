@@ -24,9 +24,9 @@ import com.google.accompanist.permissions.rememberMultiplePermissionsState
 
 sealed class Screen(val route: String, val title: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
     object Devices : Screen("devices", "Devices", Icons.Default.Bluetooth)
-    object Repl : Screen("repl", "REPL", Icons.Default.Terminal)
+    object Repl : Screen("repl", "REPL", Icons.Default.Code)
     object Files : Screen("files", "Files", Icons.Default.Folder)
-    object Telemetry : Screen("telemetry", "Telemetry", Icons.Default.ShowChart)
+    object Telemetry : Screen("telemetry", "Telemetry", Icons.Default.BarChart)
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)

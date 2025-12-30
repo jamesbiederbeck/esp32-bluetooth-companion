@@ -135,14 +135,18 @@ class Companion:
         }
         
         # Add temperature if available
-        try:
-            # ESP32 internal temperature sensor (if available)
-            temp_sensor = machine.ADC(machine.Pin(36))
-            temp_sensor.atten(machine.ADC.ATTN_11DB)
-            # Simplified temperature calculation
-            payload["temperature"] = temp_sensor.read() / 40.0
-        except:
-            pass
+        # Note: ESP32 internal temperature sensor is not well documented
+        # and varies between chip versions. This is disabled by default.
+        # If you have an external temperature sensor, add it here.
+        # Example:
+        # try:
+        #     import dht
+        #     sensor = dht.DHT22(machine.Pin(4))
+        #     sensor.measure()
+        #     payload["temperature"] = sensor.temperature()
+        #     payload["humidity"] = sensor.humidity()
+        # except:
+        #     pass
         
         self.send_message("telemetry", msg_id, payload)
     
@@ -151,14 +155,54 @@ class Companion:
         command = payload.get("command", "")
         
         try:
-            # Create a StringIO-like buffer to capture output
-            import io
-            output_buffer = io.StringIO() if hasattr(io, 'StringIO') else None
+            # Create a safe builtins dictionary with only allowed functions
+            safe_builtins = {
+                'abs': abs,
+                'all': all,
+                'any': any,
+                'bin': bin,
+                'bool': bool,
+                'bytearray': bytearray,
+                'bytes': bytes,
+                'chr': chr,
+                'dict': dict,
+                'divmod': divmod,
+                'enumerate': enumerate,
+                'filter': filter,
+                'float': float,
+                'format': format,
+                'hex': hex,
+                'int': int,
+                'isinstance': isinstance,
+                'issubclass': issubclass,
+                'iter': iter,
+                'len': len,
+                'list': list,
+                'map': map,
+                'max': max,
+                'min': min,
+                'next': next,
+                'oct': oct,
+                'ord': ord,
+                'pow': pow,
+                'print': print,
+                'range': range,
+                'repr': repr,
+                'reversed': reversed,
+                'round': round,
+                'set': set,
+                'slice': slice,
+                'sorted': sorted,
+                'str': str,
+                'sum': sum,
+                'tuple': tuple,
+                'type': type,
+                'zip': zip,
+            }
             
-            # Execute the command
-            # Note: Using exec with a restricted namespace for better security
+            # Create execution namespace with safe modules
             exec_globals = {
-                '__builtins__': __builtins__,
+                '__builtins__': safe_builtins,
                 'machine': __import__('machine'),
                 'time': __import__('time'),
                 'gc': __import__('gc'),
@@ -218,12 +262,13 @@ class Companion:
         path = payload.get("path", "")
         
         try:
-            with open(path, "r") as f:
+            # Read file in binary mode to handle both text and binary files
+            with open(path, "rb") as f:
                 content = f.read()
             
             # In real implementation, this would be chunked
             import ubinascii
-            encoded = ubinascii.b2a_base64(content.encode()).decode().strip()
+            encoded = ubinascii.b2a_base64(content).decode().strip()
             
             self.send_message("file_data", msg_id, {
                 "path": path,
