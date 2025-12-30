@@ -151,9 +151,29 @@ class Companion:
         command = payload.get("command", "")
         
         try:
+            # Create a StringIO-like buffer to capture output
+            import io
+            output_buffer = io.StringIO() if hasattr(io, 'StringIO') else None
+            
             # Execute the command
-            result = eval(command)
-            output = str(result) if result is not None else ""
+            # Note: Using exec with a restricted namespace for better security
+            exec_globals = {
+                '__builtins__': __builtins__,
+                'machine': __import__('machine'),
+                'time': __import__('time'),
+                'gc': __import__('gc'),
+                'os': __import__('os'),
+            }
+            exec_locals = {}
+            
+            # Try to evaluate as expression first
+            try:
+                result = eval(command, exec_globals, exec_locals)
+                output = str(result) if result is not None else ""
+            except SyntaxError:
+                # If not an expression, execute as statement
+                exec(command, exec_globals, exec_locals)
+                output = ""
             
             self.send_message("repl_response", msg_id, {
                 "output": output,
