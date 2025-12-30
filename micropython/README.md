@@ -2,7 +2,45 @@
 
 This directory contains the MicroPython module for the ESP32 Companion Android app.
 
+## ⚠️ Important: Bluetooth Implementation Required
+
+This module provides a **complete protocol implementation** but requires you to add platform-specific Bluetooth SPP code. The module currently:
+
+✅ **Implemented:**
+- Complete JSON-based communication protocol
+- Message encoding/decoding
+- REPL command execution (with security restrictions)
+- File transfer handlers
+- Telemetry collection
+- Notification system
+- All message type handlers
+
+⚠️ **Requires Implementation:**
+- Bluetooth SPP connection setup (hardware-specific)
+- Bluetooth data transmission
+- Connection state management
+
+The Bluetooth implementation varies significantly between ESP32 variants and MicroPython versions, so it's left for users to implement based on their specific platform.
+
 ## Installation
+
+### Important Note
+
+The companion module provides a **template implementation** of the communication protocol. The Bluetooth SPP (Serial Port Profile) connection code is platform-specific and must be implemented by the user based on their ESP32 variant and MicroPython version.
+
+The module currently:
+- ✅ Implements the JSON-based protocol
+- ✅ Handles all message types
+- ✅ Provides the API structure
+- ⚠️ Requires Bluetooth SPP implementation (platform-specific)
+
+### Prerequisites
+
+- ESP32 development board (ESP32, ESP32-S2, ESP32-S3, or ESP32-C3)
+- MicroPython firmware with Bluetooth support
+- File transfer tool (ampy, rshell, mpremote, or Thonny)
+
+### Step 1: Upload the Companion Module
 
 1. **Upload the companion module to your ESP32:**
 

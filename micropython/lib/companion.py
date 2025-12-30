@@ -68,14 +68,31 @@ class Companion:
         """
         Start the companion service
         Sets up Bluetooth SPP and begins listening for connections
+        
+        NOTE: This is a template implementation. Actual Bluetooth SPP
+        setup requires platform-specific code that varies by ESP32 variant
+        and MicroPython version. Users should implement the Bluetooth
+        connection handling based on their specific hardware and requirements.
+        
+        For reference implementations, see:
+        - ESP32: Use machine.UART with Bluetooth SPP profile
+        - ESP32-S3: Similar to ESP32
+        - Other variants: Check MicroPython documentation
         """
         print(f"Starting ESP32 Companion v{self.version}")
         print(f"Device name: {self.device_name}")
+        print("NOTE: Bluetooth SPP implementation is hardware-specific")
+        print("Please implement Bluetooth connection handling for your platform")
         
-        # Note: This is a simplified version
-        # Full Bluetooth SPP implementation would require more setup
-        print("Bluetooth SPP service started")
-        print("Waiting for connections...")
+        # TODO: Implement platform-specific Bluetooth SPP setup
+        # Example structure:
+        # 1. Initialize Bluetooth adapter
+        # 2. Configure SPP service with UUID
+        # 3. Start advertising with device name
+        # 4. Accept incoming connections
+        # 5. Set up read/write handlers
+        
+        print("Companion service initialized")
         
         # Main loop would go here
         # In a real implementation, this would listen for incoming connections
@@ -84,10 +101,17 @@ class Companion:
         """
         Send a protocol message
         
+        NOTE: This is a template implementation that prints to console.
+        In a real implementation, this should send via Bluetooth SPP.
+        
         Args:
             msg_type: Message type string
             msg_id: Message ID for correlation
             payload: Dictionary of message data
+        
+        Example implementation:
+            json_str = json.dumps(message) + "\n"
+            self.bt_connection.write(json_str.encode())
         """
         message = {
             "type": msg_type,
@@ -98,8 +122,8 @@ class Companion:
         json_str = json.dumps(message)
         print(f"TX: {json_str}")
         
-        # In real implementation, send via Bluetooth SPP
-        # self.bt.write(json_str + "\n")
+        # TODO: Replace with actual Bluetooth transmission
+        # self.bt_connection.write((json_str + "\n").encode())
     
     def notify(self, title, message, level="info"):
         """
@@ -201,12 +225,12 @@ class Companion:
             }
             
             # Create execution namespace with safe modules
+            # Note: 'os' module is excluded for security reasons
             exec_globals = {
                 '__builtins__': safe_builtins,
                 'machine': __import__('machine'),
                 'time': __import__('time'),
                 'gc': __import__('gc'),
-                'os': __import__('os'),
             }
             exec_locals = {}
             

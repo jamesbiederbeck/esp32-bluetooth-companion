@@ -27,6 +27,8 @@ Android companion application for ESP32 devices running MicroPython, inspired by
 
 ## 🚀 Quick Start
 
+> **Note:** The MicroPython module provides a complete protocol implementation but requires platform-specific Bluetooth SPP code. See [micropython/README.md](micropython/README.md) for details.
+
 ### Android App
 
 1. Download and install the APK from [Releases](../../releases)
