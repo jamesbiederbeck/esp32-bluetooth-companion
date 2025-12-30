@@ -1,8 +1,5 @@
 # Android
 android/.gradle
-android/gradle
-android/gradlew
-android/gradlew.bat
 android/.idea
 android/local.properties
 android/build/
