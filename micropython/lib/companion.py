@@ -20,12 +20,20 @@ import time
 import machine
 import gc
 import os
-from bluetooth import BluetoothError
+import ubinascii
+
+try:
+    from bluetooth import BluetoothError
+except ImportError:
+    BluetoothError = Exception
 
 try:
     import ubluetooth
 except ImportError:
-    import bluetooth as ubluetooth
+    try:
+        import bluetooth as ubluetooth
+    except ImportError:
+        ubluetooth = None
 
 
 class Companion:
@@ -269,7 +277,8 @@ class Companion:
                         "size": stat[6],
                         "type": "dir" if is_dir else "file"
                     })
-                except:
+                except OSError:
+                    # Skip items that can't be stat'd
                     pass
             
             self.send_message("file_list_response", msg_id, {
@@ -291,7 +300,6 @@ class Companion:
                 content = f.read()
             
             # In real implementation, this would be chunked
-            import ubinascii
             encoded = ubinascii.b2a_base64(content).decode().strip()
             
             self.send_message("file_data", msg_id, {
@@ -304,9 +312,14 @@ class Companion:
                 "chunk_num": 0,
                 "data": encoded
             })
-        except Exception as e:
+        except OSError as e:
             self.send_message("error", msg_id, {
                 "code": "FILE_NOT_FOUND",
+                "message": str(e)
+            })
+        except Exception as e:
+            self.send_message("error", msg_id, {
+                "code": "FILE_ERROR",
                 "message": str(e)
             })
     
