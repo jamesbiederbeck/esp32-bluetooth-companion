@@ -17,6 +17,10 @@ import kotlinx.coroutines.launch
  */
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     
+    companion object {
+        private const val BLE_SCAN_DURATION_MS = 10000L  // 10 seconds
+    }
+    
     private val connectionManager = BluetoothConnectionManager(application)
     private val protocolHandler = ProtocolHandler(connectionManager)
     
@@ -52,8 +56,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _isScanning.value = true
             connectionManager.startScan()
-            // Scan for 10 seconds
-            kotlinx.coroutines.delay(10000)
+            // Scan for configured duration
+            kotlinx.coroutines.delay(BLE_SCAN_DURATION_MS)
             stopBleScan()
         }
     }

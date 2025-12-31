@@ -225,9 +225,8 @@ class Companion:
             data = json_str.encode('utf-8')
             
             # Send data in chunks if needed
-            max_mtu = 512  # Conservative MTU size
-            for i in range(0, len(data), max_mtu):
-                chunk = data[i:i + max_mtu]
+            for i in range(0, len(data), _MAX_CHUNK_SIZE):
+                chunk = data[i:i + _MAX_CHUNK_SIZE]
                 self.ble.gatts_notify(self.conn_handle, self.tx_handle, chunk)
                 time.sleep_ms(10)  # Small delay between chunks
             

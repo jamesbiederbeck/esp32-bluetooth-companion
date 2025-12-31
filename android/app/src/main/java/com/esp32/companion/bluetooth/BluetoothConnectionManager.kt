@@ -31,6 +31,9 @@ class BluetoothConnectionManager(private val context: Context) {
         private val RX_CHAR_UUID = UUID.fromString("6E400002-B5A3-F393-E0A9-E50E24DCCA9E")
         private val TX_CHAR_UUID = UUID.fromString("6E400003-B5A3-F393-E0A9-E50E24DCCA9E")
         private val CCCD_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+        
+        // BLE communication constants
+        private const val MAX_CHUNK_SIZE = 512
     }
     
     private val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
@@ -329,10 +332,9 @@ class BluetoothConnectionManager(private val context: Context) {
             
             val bytes = (data + "\n").toByteArray(Charsets.UTF_8)
             
-            // Send in chunks if needed (max 512 bytes per write)
-            val chunkSize = 512
-            for (i in bytes.indices step chunkSize) {
-                val end = minOf(i + chunkSize, bytes.size)
+            // Send in chunks if needed
+            for (i in bytes.indices step MAX_CHUNK_SIZE) {
+                val end = minOf(i + MAX_CHUNK_SIZE, bytes.size)
                 val chunk = bytes.copyOfRange(i, end)
                 
                 characteristic.value = chunk
