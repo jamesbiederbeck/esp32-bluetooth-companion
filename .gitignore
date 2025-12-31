@@ -1,0 +1,41 @@
+# Android
+android/.gradle
+android/.idea
+android/local.properties
+android/build/
+android/app/build/
+android/captures/
+android/.externalNativeBuild
+android/.cxx
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+
+# IntelliJ
+*.iml
+.idea/
+*.ipr
+*.iws
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+.Python
+env/
+venv/
+ENV/
+
+# OS
+.DS_Store
+Thumbs.db
+*~
+
+# Temporary files
+*.swp
+*.swo
+*.tmp
+.cache/

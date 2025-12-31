@@ -1,0 +1,24 @@
+<resources>
+    <string name="app_name">ESP32 Companion</string>
+    <string name="device_discovery">Device Discovery</string>
+    <string name="scan_for_devices">Scan for Devices</string>
+    <string name="stop_scan">Stop Scan</string>
+    <string name="connect">Connect</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="repl">REPL</string>
+    <string name="files">Files</string>
+    <string name="telemetry">Telemetry</string>
+    <string name="notifications">Notifications</string>
+    <string name="connected">Connected</string>
+    <string name="disconnected">Disconnected</string>
+    <string name="connecting">Connecting…</string>
+    <string name="send_command">Send Command</string>
+    <string name="enter_command">Enter Python command…</string>
+    <string name="upload_file">Upload File</string>
+    <string name="download_file">Download</string>
+    <string name="delete_file">Delete</string>
+    <string name="refresh">Refresh</string>
+    <string name="no_devices_found">No devices found</string>
+    <string name="bluetooth_permission_required">Bluetooth permission is required</string>
+    <string name="location_permission_required">Location permission is required for Bluetooth scanning</string>
+</resources>
