@@ -4,7 +4,7 @@ Android companion application for ESP32 devices running MicroPython.
 
 ## Features
 
-- 🔵 **Bluetooth connectivity** - Connect to ESP32 devices via Bluetooth Classic
+- 🔵 **BLE connectivity** - Connect to ESP32 devices via Bluetooth Low Energy (Nordic UART Service)
 - 💻 **REPL interface** - Execute Python commands remotely
 - 📁 **File transfer** - Upload and download files to/from ESP32
 - 📊 **Telemetry** - Monitor system stats (CPU, memory, temperature)
@@ -13,7 +13,7 @@ Android companion application for ESP32 devices running MicroPython.
 ## Requirements
 
 - Android 8.0 (API level 26) or higher
-- Bluetooth Classic support
+- Bluetooth Low Energy (BLE) support
 - Location permission (required for Bluetooth scanning on Android 10+)
 
 ## Building
@@ -51,16 +51,18 @@ Android companion application for ESP32 devices running MicroPython.
 ### First Time Setup
 
 1. **Enable Bluetooth** on your Android device
-2. **Pair your ESP32** device in Android Bluetooth settings
+2. **Upload companion module** to your ESP32 and start it
 3. Launch the **ESP32 Companion** app
 4. Grant required permissions when prompted
 
 ### Connecting to ESP32
 
-1. Open the app and go to the **Devices** tab
-2. Tap **Scan for Devices** or use the refresh button
-3. Select your ESP32 from the list of paired devices
-4. Wait for connection to establish
+1. Make sure your ESP32 is running the companion module (`comp.start()`)
+2. Open the app and go to the **Devices** tab
+3. Tap **Scan BLE** to search for devices advertising the Nordic UART Service
+4. Your ESP32 should appear in the list
+5. Tap your device to connect
+6. Wait for connection and service discovery to complete
 
 ### Using the REPL
 
@@ -136,11 +138,12 @@ android/
 ### Key Components
 
 #### BluetoothConnectionManager
-Manages Bluetooth Classic connections:
-- Device scanning
-- Pairing
-- Connection management
-- Data transmission
+Manages BLE connections:
+- BLE device scanning with service UUID filtering
+- GATT client operations
+- Nordic UART Service discovery
+- Characteristic notifications
+- Data transmission with chunking
 
 #### ProtocolHandler
 Implements the communication protocol:
@@ -194,7 +197,7 @@ Run lint checks:
 
 ## Protocol
 
-The app communicates with ESP32 using a JSON-based protocol over Bluetooth Classic (SPP). See `PROTOCOL.md` for detailed specification.
+The app communicates with ESP32 using a JSON-based protocol over Bluetooth Low Energy (Nordic UART Service). See `PROTOCOL.md` for detailed specification.
 
 ## Permissions
 
@@ -204,23 +207,26 @@ The app requires the following permissions:
 - `BLUETOOTH_ADMIN` - Bluetooth management (Android < 12)
 - `BLUETOOTH_CONNECT` - Bluetooth connection (Android 12+)
 - `BLUETOOTH_SCAN` - Bluetooth scanning (Android 12+)
-- `ACCESS_FINE_LOCATION` - Required for Bluetooth scanning
+- `ACCESS_FINE_LOCATION` - Required for BLE scanning
 
 ## Troubleshooting
 
 ### Cannot find devices
 - Ensure Bluetooth is enabled
 - Grant location permissions
-- Pair device in Android settings first
+- Make sure ESP32 is advertising (comp.start() called)
+- Check that ESP32 is advertising the Nordic UART Service UUID
 
 ### Connection fails
-- Check if ESP32 is running companion module
-- Verify device is not connected to another app
-- Try unpairing and re-pairing
+- Check if ESP32 is running companion module with BLE
+- Verify ESP32 has BLE support (not ESP32-S2)
+- Check MicroPython version supports BLE (1.19+)
+- Try restarting both devices
 
 ### REPL not responding
-- Verify connection status
+- Verify connection status shows "Connected"
 - Check ESP32 console for errors
+- Ensure notifications are enabled on TX characteristic
 - Try reconnecting
 
 ## Contributing
