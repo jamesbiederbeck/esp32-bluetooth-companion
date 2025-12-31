@@ -1,13 +1,17 @@
 # ESP32 Bluetooth Companion Protocol Specification
 
 ## Overview
-This document defines the communication protocol between the Android companion app and ESP32 devices running MicroPython over Bluetooth Classic (SPP - Serial Port Profile).
+This document defines the communication protocol between the Android companion app and ESP32 devices running MicroPython over Bluetooth Low Energy (BLE) using the Nordic UART Service.
 
 ## Connection Details
-- **Protocol**: Bluetooth Classic Serial Port Profile (SPP)
-- **Service UUID**: `00001101-0000-1000-8000-00805F9B34FB` (Standard SPP UUID)
+- **Protocol**: Bluetooth Low Energy (BLE)
+- **Service**: Nordic UART Service (NUS)
+- **Service UUID**: `6E400001-B5A3-F393-E0A9-E50E24DCCA9E`
+- **RX Characteristic UUID**: `6E400002-B5A3-F393-E0A9-E50E24DCCA9E` (Write)
+- **TX Characteristic UUID**: `6E400003-B5A3-F393-E0A9-E50E24DCCA9E` (Notify)
 - **Encoding**: UTF-8
 - **Line Endings**: `\n` (newline)
+- **Max MTU**: 512 bytes per transmission
 
 ## Message Format
 All messages follow a JSON-based format for easy parsing on both sides:
@@ -272,8 +276,9 @@ All messages follow a JSON-based format for easy parsing on both sides:
 
 ## Implementation Notes
 
-1. **Chunk Size**: For file transfers, use a maximum chunk size of 512 bytes (base64 encoded)
+1. **Chunk Size**: For file transfers, use a maximum chunk size of 512 bytes (base64 encoded) to fit within BLE MTU limits
 2. **Timeout**: Implement 10-second timeout for responses
-3. **Buffering**: Messages should be buffered on both sides to handle network delays
-4. **Connection**: Maintain persistent connection during active session
+3. **Buffering**: Messages should be buffered on both sides to handle BLE packet fragmentation
+4. **Connection**: BLE connection is automatically maintained by the OS
 5. **Reconnection**: Implement automatic reconnection with exponential backoff
+6. **Notifications**: The TX characteristic must have notifications enabled to receive data from ESP32

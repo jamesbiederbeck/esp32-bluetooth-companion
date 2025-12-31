@@ -18,9 +18,17 @@ import com.esp32.companion.viewmodel.MainViewModel
 @Composable
 fun DeviceListScreen(viewModel: MainViewModel) {
     val availableDevices by viewModel.availableDevices.collectAsState()
+    val scannedDevices by viewModel.scannedDevices.collectAsState()
     val connectionState by viewModel.connectionState.collectAsState()
     val connectedDevice by viewModel.connectedDevice.collectAsState()
     val isScanning by viewModel.isScanning.collectAsState()
+    
+    // Combine both lists, removing duplicates
+    val allDevices = remember(availableDevices, scannedDevices) {
+        val combined = (availableDevices + scannedDevices)
+            .distinctBy { it.address }
+        combined
+    }
     
     LaunchedEffect(Unit) {
         viewModel.loadPairedDevices()
@@ -90,11 +98,23 @@ fun DeviceListScreen(viewModel: MainViewModel) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Paired Devices",
+                text = "Available Devices",
                 style = MaterialTheme.typography.titleLarge
             )
-            IconButton(onClick = { viewModel.loadPairedDevices() }) {
-                Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+            Row {
+                if (isScanning) {
+                    Button(onClick = { viewModel.stopBleScan() }) {
+                        Text("Stop Scan")
+                    }
+                } else {
+                    Button(onClick = { viewModel.startBleScan() }) {
+                        Text("Scan BLE")
+                    }
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                IconButton(onClick = { viewModel.loadPairedDevices() }) {
+                    Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                }
             }
         }
         
@@ -102,13 +122,20 @@ fun DeviceListScreen(viewModel: MainViewModel) {
         
         // Device list
         if (isScanning) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                CircularProgressIndicator()
+                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Scanning for BLE devices...")
             }
-        } else if (availableDevices.isEmpty()) {
+        }
+        
+        if (allDevices.isEmpty() && !isScanning) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -117,7 +144,7 @@ fun DeviceListScreen(viewModel: MainViewModel) {
             }
         } else {
             LazyColumn {
-                items(availableDevices) { device ->
+                items(allDevices) { device ->
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()

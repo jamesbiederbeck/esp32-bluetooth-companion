@@ -3,7 +3,7 @@ ESP32 Companion Module for MicroPython
 
 This module implements the communication protocol for the ESP32 Companion Android app.
 It provides functionality for REPL, file transfer, telemetry, and notifications over
-Bluetooth Classic (SPP).
+Bluetooth Low Energy (BLE).
 
 Usage:
     from companion import Companion
@@ -13,6 +13,11 @@ Usage:
     
     # Send a notification
     comp.notify("Alert", "Temperature high!", "warning")
+    
+    # Main loop
+    while True:
+        comp.loop()
+        time.sleep(0.1)
 """
 
 import json
@@ -21,24 +26,39 @@ import machine
 import gc
 import os
 import ubinascii
-
-try:
-    from bluetooth import BluetoothError
-except ImportError:
-    BluetoothError = Exception
+import struct
 
 try:
     import ubluetooth
+    from ubluetooth import BLE
 except ImportError:
-    try:
-        import bluetooth as ubluetooth
-    except ImportError:
-        ubluetooth = None
+    ubluetooth = None
+    BLE = None
+
+
+# BLE UUIDs for ESP32 Companion service
+_SERVICE_UUID = ubluetooth.UUID("6E400001-B5A3-F393-E0A9-E50E24DCCA9E")  # Nordic UART Service
+_RX_CHAR_UUID = ubluetooth.UUID("6E400002-B5A3-F393-E0A9-E50E24DCCA9E")  # RX Characteristic
+_TX_CHAR_UUID = ubluetooth.UUID("6E400003-B5A3-F393-E0A9-E50E24DCCA9E")  # TX Characteristic
+
+# BLE flags
+_FLAG_READ = 0x0002
+_FLAG_WRITE_NO_RESPONSE = 0x0004
+_FLAG_WRITE = 0x0008
+_FLAG_NOTIFY = 0x0010
+
+# BLE IRQ events
+_IRQ_CENTRAL_CONNECT = 1
+_IRQ_CENTRAL_DISCONNECT = 2
+_IRQ_GATTS_WRITE = 3
+
+# Maximum message chunk size for BLE
+_MAX_CHUNK_SIZE = 512
 
 
 class Companion:
     """
-    Main companion class for ESP32 Android app communication
+    Main companion class for ESP32 Android app communication over BLE
     """
     
     def __init__(self, device_name="ESP32-Companion"):
@@ -49,16 +69,24 @@ class Companion:
             device_name: Bluetooth device name to advertise
         """
         self.device_name = device_name
-        self.bt = None
+        self.ble = BLE() if BLE else None
         self.connected = False
-        self.client_addr = None
+        self.conn_handle = None
+        self.rx_handle = None
+        self.tx_handle = None
         self.handlers = {}
         self.telemetry_interval = 0
         self.last_telemetry = 0
         self.version = "1.0.0"
+        self.rx_buffer = ""
         
         # Register default message handlers
         self._register_handlers()
+        
+        # Register BLE services
+        if self.ble:
+            self._register_services()
+            self.ble.irq(self._ble_irq)
     
     def _register_handlers(self):
         """Register default message type handlers"""
@@ -72,66 +100,143 @@ class Companion:
             "ping": self._handle_ping,
         }
     
+    def _register_services(self):
+        """Register BLE GATT services and characteristics"""
+        # Define the Nordic UART Service
+        service = (
+            _SERVICE_UUID,
+            (
+                (_RX_CHAR_UUID, _FLAG_WRITE | _FLAG_WRITE_NO_RESPONSE),
+                (_TX_CHAR_UUID, _FLAG_NOTIFY | _FLAG_READ),
+            ),
+        )
+        
+        # Register services
+        ((self.rx_handle, self.tx_handle),) = self.ble.gatts_register_services((service,))
+        
+        # Set initial value
+        self.ble.gatts_write(self.tx_handle, b'')
+    
+    def _ble_irq(self, event, data):
+        """Handle BLE IRQ events"""
+        if event == _IRQ_CENTRAL_CONNECT:
+            # A central has connected to this peripheral
+            self.conn_handle, _, _ = data
+            self.connected = True
+            print(f"BLE connected: handle={self.conn_handle}")
+            
+        elif event == _IRQ_CENTRAL_DISCONNECT:
+            # A central has disconnected
+            self.conn_handle, _, _ = data
+            self.connected = False
+            print(f"BLE disconnected: handle={self.conn_handle}")
+            self.conn_handle = None
+            # Start advertising again
+            self._advertise()
+            
+        elif event == _IRQ_GATTS_WRITE:
+            # A client has written to a characteristic
+            conn_handle, attr_handle = data
+            if conn_handle == self.conn_handle and attr_handle == self.rx_handle:
+                # Read the data
+                value = self.ble.gatts_read(self.rx_handle)
+                self._handle_rx_data(value)
+    
+    def _handle_rx_data(self, data):
+        """Handle received data from BLE"""
+        try:
+            # Decode the received data
+            msg = data.decode('utf-8')
+            self.rx_buffer += msg
+            
+            # Process complete messages (ending with newline)
+            while '\n' in self.rx_buffer:
+                line, self.rx_buffer = self.rx_buffer.split('\n', 1)
+                if line:
+                    self.process_message(line)
+        except Exception as e:
+            print(f"Error handling RX data: {e}")
+    
+    def _advertise(self, interval_us=500000):
+        """Start BLE advertising"""
+        # Advertising payload
+        name = self.device_name.encode('utf-8')
+        payload = bytearray()
+        
+        # Flags
+        payload.extend(struct.pack("BB", 2, 0x01))
+        payload.append(0x06)  # General discoverable + BR/EDR not supported
+        
+        # Name
+        payload.extend(struct.pack("BB", len(name) + 1, 0x09))
+        payload.extend(name)
+        
+        # Advertise
+        self.ble.gap_advertise(interval_us, adv_data=payload)
+        print(f"BLE advertising as '{self.device_name}'")
+    
     def start(self):
         """
-        Start the companion service
-        Sets up Bluetooth SPP and begins listening for connections
-        
-        NOTE: This is a template implementation. Actual Bluetooth SPP
-        setup requires platform-specific code that varies by ESP32 variant
-        and MicroPython version. Users should implement the Bluetooth
-        connection handling based on their specific hardware and requirements.
-        
-        For reference implementations, see:
-        - ESP32: Use machine.UART with Bluetooth SPP profile
-        - ESP32-S3: Similar to ESP32
-        - Other variants: Check MicroPython documentation
+        Start the companion service with BLE
         """
+        if not self.ble:
+            print("ERROR: BLE not available on this device")
+            return False
+            
         print(f"Starting ESP32 Companion v{self.version}")
         print(f"Device name: {self.device_name}")
-        print("NOTE: Bluetooth SPP implementation is hardware-specific")
-        print("Please implement Bluetooth connection handling for your platform")
         
-        # TODO: Implement platform-specific Bluetooth SPP setup
-        # Example structure:
-        # 1. Initialize Bluetooth adapter
-        # 2. Configure SPP service with UUID
-        # 3. Start advertising with device name
-        # 4. Accept incoming connections
-        # 5. Set up read/write handlers
-        
-        print("Companion service initialized")
-        
-        # Main loop would go here
-        # In a real implementation, this would listen for incoming connections
+        try:
+            # Activate BLE
+            self.ble.active(True)
+            
+            # Start advertising
+            self._advertise()
+            
+            print("BLE service started successfully")
+            print("Waiting for connections...")
+            return True
+            
+        except Exception as e:
+            print(f"Error starting BLE service: {e}")
+            return False
     
     def send_message(self, msg_type, msg_id, payload):
         """
-        Send a protocol message
-        
-        NOTE: This is a template implementation that prints to console.
-        In a real implementation, this should send via Bluetooth SPP.
+        Send a protocol message via BLE
         
         Args:
             msg_type: Message type string
             msg_id: Message ID for correlation
             payload: Dictionary of message data
-        
-        Example implementation:
-            json_str = json.dumps(message) + "\n"
-            self.bt_connection.write(json_str.encode())
         """
-        message = {
-            "type": msg_type,
-            "id": msg_id,
-            "payload": payload
-        }
-        
-        json_str = json.dumps(message)
-        print(f"TX: {json_str}")
-        
-        # TODO: Replace with actual Bluetooth transmission
-        # self.bt_connection.write((json_str + "\n").encode())
+        if not self.connected or not self.conn_handle:
+            print(f"Not connected, cannot send {msg_type}")
+            return False
+            
+        try:
+            message = {
+                "type": msg_type,
+                "id": msg_id,
+                "payload": payload
+            }
+            
+            json_str = json.dumps(message) + "\n"
+            data = json_str.encode('utf-8')
+            
+            # Send data in chunks if needed
+            max_mtu = 512  # Conservative MTU size
+            for i in range(0, len(data), max_mtu):
+                chunk = data[i:i + max_mtu]
+                self.ble.gatts_notify(self.conn_handle, self.tx_handle, chunk)
+                time.sleep_ms(10)  # Small delay between chunks
+            
+            print(f"TX: {msg_type} [{msg_id}]")
+            return True
+            
+        except Exception as e:
+            print(f"Error sending message: {e}")
+            return False
     
     def notify(self, title, message, level="info"):
         """

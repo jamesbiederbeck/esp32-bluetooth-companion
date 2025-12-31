@@ -23,6 +23,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val connectionState: StateFlow<ConnectionState> = connectionManager.connectionState
     val connectedDevice: StateFlow<BluetoothDeviceInfo?> = connectionManager.connectedDevice
     val replOutput: StateFlow<String> = protocolHandler.replOutput
+    val scannedDevices: StateFlow<List<BluetoothDeviceInfo>> = connectionManager.scannedDevices
     
     private val _availableDevices = MutableStateFlow<List<BluetoothDeviceInfo>>(emptyList())
     val availableDevices: StateFlow<List<BluetoothDeviceInfo>> = _availableDevices.asStateFlow()
@@ -42,6 +43,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun isBluetoothEnabled(): Boolean {
         return connectionManager.isBluetoothEnabled()
+    }
+    
+    /**
+     * Start BLE scan for devices
+     */
+    fun startBleScan() {
+        viewModelScope.launch {
+            _isScanning.value = true
+            connectionManager.startScan()
+            // Scan for 10 seconds
+            kotlinx.coroutines.delay(10000)
+            stopBleScan()
+        }
+    }
+    
+    /**
+     * Stop BLE scan
+     */
+    fun stopBleScan() {
+        connectionManager.stopScan()
+        _isScanning.value = false
     }
     
     /**

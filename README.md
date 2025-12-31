@@ -12,7 +12,7 @@ Android companion application for ESP32 devices running MicroPython, inspired by
 
 ## ✨ Features
 
-- 🔵 **Bluetooth Connectivity** - Seamless connection to ESP32 via Bluetooth Classic (SPP)
+- 🔵 **BLE Connectivity** - Seamless connection to ESP32 via Bluetooth Low Energy (Nordic UART Service)
 - 💻 **REPL Interface** - Execute Python commands remotely on your ESP32
 - 📁 **File Transfer** - Upload and download files bidirectionally
 - 📊 **Real-time Telemetry** - Monitor CPU, memory, temperature, and custom sensors
@@ -27,7 +27,7 @@ Android companion application for ESP32 devices running MicroPython, inspired by
 
 ## 🚀 Quick Start
 
-> **Note:** The MicroPython module provides a complete protocol implementation but requires platform-specific Bluetooth SPP code. See [micropython/README.md](micropython/README.md) for details.
+> **Note:** The MicroPython module provides a complete BLE implementation using the Nordic UART Service. See [micropython/README.md](micropython/README.md) for details.
 
 ### Android App
 
